@@ -15,34 +15,15 @@ import os
 logger = get_glue_logger(__name__)
 
 def call_api(messages):
-
     from openai import OpenAI
-    from azure.identity import get_bearer_token_provider, AzureCliCredential
     from openai import AzureOpenAI
-
-    if os.environ['USE_OPENAI_API_KEY'] == "True":
-        client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
-
-        response = client.chat.completions.create(
-        model=os.environ["OPENAI_MODEL_NAME"],
+    client = OpenAI(base_url = 'http://localhost:11434/v1',
+                    api_key='ollama')
+    response = client.chat.completions.create(
+        model="granite3.1-dense:2b",
         messages=messages,
         temperature=0.0,
         )
-    else:
-        token_provider = get_bearer_token_provider(
-                AzureCliCredential(), "https://cognitiveservices.azure.com/.default"
-            )
-        client = AzureOpenAI(
-            api_version=os.environ["OPENAI_API_VERSION"],
-            azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
-            azure_ad_token_provider=token_provider
-            )
-        response = client.chat.completions.create(
-            model=os.environ["AZURE_OPENAI_DEPLOYMENT_NAME"],
-            messages=messages,
-            temperature=0.0,
-        )
-
     prediction = response.choices[0].message.content
     return prediction
 
@@ -51,19 +32,20 @@ class LLMMgr:
     @staticmethod
     def chat_completion(messages: Dict):
         llm_handle = os.environ.get("MODEL_TYPE", "AzureOpenAI")
-        try:
-            if(llm_handle == "AzureOpenAI"): 
-                # Code to for calling LLMs
-                return call_api(messages)
-            elif(llm_handle == "LLamaAML"):
-                # Code to for calling SLMs
-                return 0
-        except Exception as e:
-            print(e)
-            return "Sorry, I am not able to understand your query. Please try again."
-            # raise GlueLLMException(f"Exception when calling {llm_handle.__class__.__name__} "
-            #                        f"LLM in chat mode, with message {messages} ", e)
-        
+        return call_api(messages)
+#        try:
+#            if(llm_handle == "AzureOpenAI"): 
+#                # Code to for calling LLMs
+#                return call_api(messages)
+#            elif(llm_handle == "LLamaAML"):
+#                # Code to for calling SLMs
+#                return 0
+#        except Exception as e:
+#            print(e)
+#            return "Sorry, I am not able to understand your query. Please try again."
+#            # raise GlueLLMException(f"Exception when calling {llm_handle.__class__.__name__} "
+#            #                        f"LLM in chat mode, with message {messages} ", e)
+#        
 
     @staticmethod
     def get_all_model_ids_of_type(llm_config: LLMConfig, llm_output_type: str):
